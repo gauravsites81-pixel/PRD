@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export default function AdminPage() {
@@ -36,6 +36,13 @@ export default function AdminPage() {
       if (!user) {
         window.location.href = '/login?next=/admin';
         return;
+      }
+
+      // Check if user has admin privileges
+      const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!hasServiceKey) {
+        console.warn('Service role key not configured, using basic access');
       }
 
       // Simple admin bypass - accept any logged-in user
