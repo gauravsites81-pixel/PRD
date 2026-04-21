@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [cooldownTime, setCooldownTime] = useState(0);
   const [rateLimitHit, setRateLimitHit] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // Prevent multiple clicks
+  const [lastRequestTime, setLastRequestTime] = useState(0); // Global rate guard
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,6 +32,7 @@ export default function LoginPage() {
     // Check for existing cooldown from localStorage
     const storedCooldown = localStorage.getItem('emailResendCooldown');
     const storedRateLimit = localStorage.getItem('emailRateLimitHit');
+    const storedLastRequest = localStorage.getItem('lastEmailRequestTime');
     
     if (storedRateLimit) {
       setRateLimitHit(true);
@@ -46,6 +48,10 @@ export default function LoginPage() {
         localStorage.removeItem('emailRateLimitHit');
         setRateLimitHit(false);
       }
+    }
+
+    if (storedLastRequest) {
+      setLastRequestTime(parseInt(storedLastRequest));
     }
   }, []);
 
@@ -113,6 +119,14 @@ export default function LoginPage() {
       return;
     }
 
+    // Global rate guard - prevent too frequent requests
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    if (timeSinceLastRequest < 60000) { // 60 seconds
+      setError('Please wait before making another request.');
+      return;
+    }
+
     // Prevent multiple rapid clicks
     if (isProcessing) {
       return;
@@ -128,31 +142,20 @@ export default function LoginPage() {
     setIsResending(true);
     setError('');
     setMessage('');
+    setLastRequestTime(now);
+    localStorage.setItem('lastEmailRequestTime', now.toString());
 
     console.log('Resending verification to email:', email);
 
     try {
-      // First try with email_change type (has higher limits)
-      let resendResult = await supabase.auth.resend({
-        type: 'email_change',
+      // Use signup type for resend verification
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
         email,
         options: {
           emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
         },
       });
-
-      // If email_change fails, try with signup type
-      if (resendResult.error && resendResult.error.message?.includes('Invalid email type')) {
-        resendResult = await supabase.auth.resend({
-          type: 'signup',
-          email,
-          options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
-          },
-        });
-      }
-
-      const { error: resendError } = resendResult;
 
       if (resendError) {
         console.error('Resend error:', resendError);
@@ -161,43 +164,19 @@ export default function LoginPage() {
         } else if (resendError.message?.includes('already confirmed')) {
           setError('This email is already verified. You can log in.');
         } else if (resendError.message?.includes('rate limit') || resendError.message?.includes('too many requests') || resendError.message?.includes('over_email_rate_limit')) {
-          // Try alternative approach - wait and retry once
-          console.log('Rate limit hit, waiting 2 seconds and retrying...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Retry with email_change type as fallback
-          const retryResult = await supabase.auth.resend({
-            type: 'email_change', // Use email_change type as fallback
-            email,
-            options: {
-              emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
-            },
-          });
-          
-          if (retryResult.error) {
-            console.error('Retry also failed:', retryResult.error);
-            // Set 3 minute cooldown (reduced from 5 minutes)
-            const cooldownEnd = Date.now() + (3 * 60 * 1000);
-            localStorage.setItem('emailResendCooldown', cooldownEnd.toString());
-            localStorage.setItem('emailRateLimitHit', 'true');
-            setCooldownTime(180); // 3 minutes in seconds
-            setRateLimitHit(true);
-            setError('Email service temporarily busy. Please wait 3 minutes before trying again.');
-          } else {
-            console.log('Retry successful for:', email);
-            setMessage(`Verification email sent to ${email}! Please check your inbox.`);
-            // Clear any existing cooldown on successful send
-            localStorage.removeItem('emailResendCooldown');
-            localStorage.removeItem('emailRateLimitHit');
-            setRateLimitHit(false);
-            setCooldownTime(0);
-          }
+          setError('Too many attempts. Please wait before trying again.');
+          // Set 3 minute cooldown for rate limit
+          const cooldownEnd = Date.now() + (3 * 60 * 1000);
+          localStorage.setItem('emailResendCooldown', cooldownEnd.toString());
+          localStorage.setItem('emailRateLimitHit', 'true');
+          setCooldownTime(180);
+          setRateLimitHit(true);
         } else {
           setError(resendError.message || 'Failed to resend verification email. Please try again.');
         }
       } else {
         console.log('Verification email sent successfully to:', email);
-        setMessage(`Email sent! Please check your inbox.`);
+        setMessage('Email sent! Please check your inbox.');
         // Set 60-second cooldown after successful send
         const cooldownEnd = Date.now() + (60 * 1000);
         localStorage.setItem('emailResendCooldown', cooldownEnd.toString());
