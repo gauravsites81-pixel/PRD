@@ -77,6 +77,8 @@ export default function LoginPage() {
     setError('');
     setMessage('');
 
+    console.log('Resending verification to email:', email);
+
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
       email,
@@ -86,9 +88,17 @@ export default function LoginPage() {
     });
 
     if (resendError) {
-      setError(resendError.message || 'Failed to resend verification email. Please try again.');
+      console.error('Resend error:', resendError);
+      if (resendError.message?.includes('User not found')) {
+        setError('No account found with this email address. Please sign up first.');
+      } else if (resendError.message?.includes('already confirmed')) {
+        setError('This email is already verified. You can log in.');
+      } else {
+        setError(resendError.message || 'Failed to resend verification email. Please try again.');
+      }
     } else {
-      setMessage('Verification email sent! Please check your inbox.');
+      console.log('Verification email sent successfully to:', email);
+      setMessage(`Verification email sent to ${email}! Please check your inbox.`);
     }
 
     setIsResending(false);

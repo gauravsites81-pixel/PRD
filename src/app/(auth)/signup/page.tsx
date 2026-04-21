@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,6 +41,7 @@ export default function SignupPage() {
     }
 
     setIsLoading(true);
+    setSignupEmail(email); // Preserve email for resend functionality
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -83,7 +85,9 @@ export default function SignupPage() {
   }
 
   async function handleResendVerification() {
-    if (!email) {
+    const emailToUse = email || signupEmail;
+    
+    if (!emailToUse) {
       setError('Please enter your email address first.');
       return;
     }
@@ -92,18 +96,28 @@ export default function SignupPage() {
     setError('');
     setMessage('');
 
+    console.log('Resending verification to email:', emailToUse);
+
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
-      email,
+      email: emailToUse,
       options: {
         emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
       },
     });
 
     if (resendError) {
-      setError(resendError.message || 'Failed to resend verification email. Please try again.');
+      console.error('Resend error:', resendError);
+      if (resendError.message?.includes('User not found')) {
+        setError('No account found with this email address. Please sign up first.');
+      } else if (resendError.message?.includes('already confirmed')) {
+        setError('This email is already verified. You can log in.');
+      } else {
+        setError(resendError.message || 'Failed to resend verification email. Please try again.');
+      }
     } else {
-      setMessage('Verification email sent! Please check your inbox.');
+      console.log('Verification email sent successfully to:', emailToUse);
+      setMessage(`Verification email sent to ${emailToUse}! Please check your inbox.`);
     }
 
     setIsResending(false);
@@ -181,7 +195,7 @@ export default function SignupPage() {
             </p>
           ) : null}
 
-          {message && email ? (
+          {message && (email || signupEmail) ? (
             <button
               type="button"
               onClick={handleResendVerification}
