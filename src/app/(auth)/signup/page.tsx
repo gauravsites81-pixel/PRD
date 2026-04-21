@@ -99,8 +99,6 @@ export default function SignupPage() {
       // Handle duplicate email gracefully
       if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already been registered')) {
         setError('Email already registered. Please verify your email or request a new verification link.');
-      } else if (signUpError.message?.includes('rate limit') || signUpError.message?.includes('too many requests')) {
-        setError('Too many signup requests. Please wait a few minutes before trying again.');
       } else {
         setError(signUpError.message || 'Failed to create account. Please try again.');
       }
