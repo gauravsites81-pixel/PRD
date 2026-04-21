@@ -21,6 +21,8 @@ export default function AdminPage() {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [prizePool, setPrizePool] = useState({ total: 0, activeSubscribers: 0, distribution: { first: 40, second: 35, third: 25 } });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -38,6 +40,16 @@ export default function AdminPage() {
         return;
       }
 
+      // Check if user is admin
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+      const isAdmin = user?.email === adminEmail;
+      
+      if (!isAdmin) {
+        console.warn('Access denied: User is not admin');
+        window.location.href = '/';
+        return;
+      }
+
       // Check if user has admin privileges
       const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
       
@@ -45,12 +57,11 @@ export default function AdminPage() {
         console.warn('Service role key not configured, using basic access');
       }
 
-      // Simple admin bypass - accept any logged-in user
       setUser(user);
       setIsLoading(false);
     } catch (error) {
       console.error('Error checking admin access:', error);
-      window.location.href = '/dashboard';
+      window.location.href = '/';
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +69,6 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      
       // Fetch draws
       const { data: drawsData } = await supabase
         .from('draws')
@@ -70,6 +80,12 @@ export default function AdminPage() {
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Fetch subscriptions
+      const { data: subscriptionsData } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('status', 'active');
 
       // Fetch draw results with user info
       const { data: resultsData } = await supabase
@@ -87,9 +103,16 @@ export default function AdminPage() {
         `)
         .order('created_at', { ascending: false });
 
+      // Calculate prize pool
+      const activeSubscribers = subscriptionsData?.length || 0;
+      const totalPool = activeSubscribers * 10; // $10 per subscriber
+      const distribution = { first: 40, second: 35, third: 25 };
+
       setDraws(drawsData || []);
       setUsers(usersData || []);
+      setSubscriptions(subscriptionsData || []);
       setDrawResults(resultsData || []);
+      setPrizePool({ total: totalPool, activeSubscribers, distribution });
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch data');
@@ -137,6 +160,28 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error marking paid:', error);
       setError('Failed to mark as paid');
+    }
+  };
+
+  const handleRejectWinner = async (winnerId: string) => {
+    try {
+      const { error } = await supabaseAdmin
+        .from('draw_results')
+        .update({
+          verification_status: 'rejected'
+        })
+        .eq('id', winnerId);
+
+      if (error) {
+        setError('Failed to reject winner');
+        return;
+      }
+
+      setSuccess('Winner rejected successfully!');
+      await fetchData();
+    } catch (error) {
+      console.error('Error rejecting winner:', error);
+      setError('Failed to reject winner');
     }
   };
 
@@ -231,21 +276,42 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Prize Pool */}
+        {/* Prize Pool Info */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Prize Pool</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Prize Pool Info</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Total Pool</p>
-              <p className="text-2xl font-bold text-blue-600">$0</p>
+              <p className="text-2xl font-bold text-blue-600">${prizePool.total}</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600">Active Subscribers</p>
-              <p className="text-2xl font-bold text-green-600">{users.length}</p>
+              <p className="text-sm text-gray-600">Active Subscriptions</p>
+              <p className="text-2xl font-bold text-green-600">{prizePool.activeSubscribers}</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600">Prize per Sub</p>
               <p className="text-2xl font-bold text-purple-600">$10</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Distribution</p>
+              <p className="text-lg font-bold text-orange-600">40/35/25</p>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Prize Distribution</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between bg-yellow-50 p-3 rounded">
+                <span className="text-sm font-medium text-yellow-800">1st Prize (40%)</span>
+                <span className="text-lg font-bold text-yellow-900">${(prizePool.total * 0.4).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between bg-blue-50 p-3 rounded">
+                <span className="text-sm font-medium text-blue-800">2nd Prize (35%)</span>
+                <span className="text-lg font-bold text-blue-900">${(prizePool.total * 0.35).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between bg-green-50 p-3 rounded">
+                <span className="text-sm font-medium text-green-800">3rd Prize (25%)</span>
+                <span className="text-lg font-bold text-green-900">${(prizePool.total * 0.25).toFixed(2)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -267,7 +333,10 @@ export default function AdminPage() {
                     Proof
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Verification Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -277,7 +346,7 @@ export default function AdminPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {drawResults.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       No winners yet
                     </td>
                   </tr>
@@ -324,12 +393,20 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
                           {result.verification_status === 'pending' && (
-                            <button
-                              onClick={() => handleApproveWinner(result.id)}
-                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                            >
-                              Approve
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleApproveWinner(result.id)}
+                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectWinner(result.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Reject
+                              </button>
+                            </>
                           )}
                           {result.verification_status === 'approved' && result.payment_status === 'pending' && (
                             <button
@@ -357,53 +434,58 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Draws List */}
+        {/* Draw History */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">All Draws</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Draw History</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Draw Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Numbers
+                    Winning Numbers
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Total Pool
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Winners Count
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {draws.map((draw) => (
-                  <tr key={draw.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(draw.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        {draw.drawn_numbers.map((num, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                          >
-                            {num}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        draw.status === 'published' 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {draw.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {draws.map((draw) => {
+                  const drawWinners = drawResults.filter(result => result.draw_id === draw.id);
+                  return (
+                    <tr key={draw.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(draw.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex gap-2">
+                          {draw.drawn_numbers.map((num, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                            >
+                              {num}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${(drawWinners.length * 10).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {drawWinners.length}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {draws.length === 0 && (
@@ -412,9 +494,9 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">All Users</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Users List</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -426,36 +508,41 @@ export default function AdminPage() {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
+                    Subscription Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Joined
+                    Created At
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.full_name || 'Not set'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'admin' 
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(user.created_at)}
-                    </td>
-                  </tr>
-                ))}
+                {users.map((user) => {
+                  const userSubscription = subscriptions.find(sub => sub.user_id === user.id);
+                  return (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.full_name || 'Not set'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          userSubscription?.status === 'active' 
+                            ? 'bg-green-100 text-green-800'
+                            : userSubscription?.status === 'cancelled'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {userSubscription?.status || 'none'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(user.created_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {users.length === 0 && (
