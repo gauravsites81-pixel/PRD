@@ -13,7 +13,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [nextPath, setNextPath] = useState('/dashboard');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,7 +52,8 @@ export default function LoginPage() {
       if (loginError.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
       } else if (loginError.message?.includes('Email not confirmed')) {
-        setError('Please confirm your email address before logging in.');
+        setError('Please verify your email address before logging in.');
+        setMessage('Need a new verification email? Click the button below.');
       } else {
         setError(loginError.message || 'Login failed. Please try again.');
       }
@@ -62,6 +65,33 @@ export default function LoginPage() {
 
     router.replace(nextPath);
     router.refresh();
+  }
+
+  async function handleResendVerification() {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setIsResending(true);
+    setError('');
+    setMessage('');
+
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
+      },
+    });
+
+    if (resendError) {
+      setError(resendError.message || 'Failed to resend verification email. Please try again.');
+    } else {
+      setMessage('Verification email sent! Please check your inbox.');
+    }
+
+    setIsResending(false);
   }
 
   return (
@@ -121,6 +151,29 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
+          ) : null}
+
+          {message ? (
+            <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-emerald-800">
+                    {message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {message && email && error?.includes('verify your email') ? (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={isResending}
+              className="w-full rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isResending ? 'Resending...' : 'Resend verification email'}
+            </button>
           ) : null}
 
           <button

@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,12 +48,17 @@ export default function SignupPage() {
         data: {
           full_name: fullName.trim(),
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/auth/callback?next=/dashboard`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
       },
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Handle duplicate email gracefully
+      if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already been registered')) {
+        setError('Email already registered. Please verify your email or request a new verification link.');
+      } else {
+        setError(signUpError.message || 'Failed to create account. Please try again.');
+      }
       setIsLoading(false);
       return;
     }
@@ -74,6 +80,33 @@ export default function SignupPage() {
 
     setMessage('Check your email to confirm your account, then log in.');
     setIsLoading(false);
+  }
+
+  async function handleResendVerification() {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setIsResending(true);
+    setError('');
+    setMessage('');
+
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
+      },
+    });
+
+    if (resendError) {
+      setError(resendError.message || 'Failed to resend verification email. Please try again.');
+    } else {
+      setMessage('Verification email sent! Please check your inbox.');
+    }
+
+    setIsResending(false);
   }
 
   return (
@@ -146,6 +179,17 @@ export default function SignupPage() {
             <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
               {message}
             </p>
+          ) : null}
+
+          {message && email ? (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={isResending}
+              className="w-full rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isResending ? 'Resending...' : 'Resend verification email'}
+            </button>
           ) : null}
 
           <button
