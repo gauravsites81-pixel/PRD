@@ -44,5 +44,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL(next, requestUrl.origin));
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app';
+  return NextResponse.redirect(new URL(next, baseUrl));
 }

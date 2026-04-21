@@ -47,10 +47,7 @@ export default function SignupPage() {
         data: {
           full_name: fullName.trim(),
         },
-        emailRedirectTo:
-          typeof window !== 'undefined'
-            ? `${window.location.origin}/auth/callback?next=/dashboard`
-            : undefined,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/auth/callback?next=/dashboard`,
       },
     });
 
