@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [isResending, setIsResending] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [rateLimitHit, setRateLimitHit] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Prevent multiple clicks
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -112,12 +113,18 @@ export default function LoginPage() {
       return;
     }
 
+    // Prevent multiple rapid clicks
+    if (isProcessing) {
+      return;
+    }
+
     // Check if cooldown is active
     if (cooldownTime > 0) {
       setError(`Please wait ${cooldownTime} seconds before requesting another email.`);
       return;
     }
 
+    setIsProcessing(true);
     setIsResending(true);
     setError('');
     setMessage('');
@@ -190,12 +197,12 @@ export default function LoginPage() {
         }
       } else {
         console.log('Verification email sent successfully to:', email);
-        setMessage(`Verification email sent to ${email}! Please check your inbox.`);
-        // Clear any existing cooldown on successful send
-        localStorage.removeItem('emailResendCooldown');
-        localStorage.removeItem('emailRateLimitHit');
+        setMessage(`Email sent! Please check your inbox.`);
+        // Set 60-second cooldown after successful send
+        const cooldownEnd = Date.now() + (60 * 1000);
+        localStorage.setItem('emailResendCooldown', cooldownEnd.toString());
+        setCooldownTime(60);
         setRateLimitHit(false);
-        setCooldownTime(0);
       }
     } catch (error) {
       console.error('Unexpected error during resend:', error);
@@ -203,6 +210,7 @@ export default function LoginPage() {
     }
 
     setIsResending(false);
+    setIsProcessing(false);
   }
 
   return (
@@ -280,10 +288,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleResendVerification}
-              disabled={isResending || cooldownTime > 0}
+              disabled={isResending || cooldownTime > 0 || isProcessing}
               className="w-full rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isResending ? 'Resending...' : 
+              {isResending ? 'Sending...' : 
                cooldownTime > 0 ? `Resend in ${cooldownTime}s` : 
                'Resend verification email'}
             </button>
