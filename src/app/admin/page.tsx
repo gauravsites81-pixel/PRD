@@ -1,11 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSupabase } from '@/lib/supabase-provider';
+import { createClient } from '@supabase/supabase-js';
 import type { User, Draw, DrawResult } from '@/types/database';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export default function AdminPage() {
-  const supabase = useSupabase();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDrawRunning, setIsDrawRunning] = useState(false);
@@ -18,7 +27,7 @@ export default function AdminPage() {
   useEffect(() => {
     checkAdminAccess();
     fetchData();
-  }, [checkAdminAccess, fetchData]);
+  }, []);
 
   const checkAdminAccess = async () => {
     try {
@@ -82,7 +91,7 @@ export default function AdminPage() {
 
   const handleApproveWinner = async (winnerId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('draw_results')
         .update({
           verification_status: 'approved'
@@ -104,7 +113,7 @@ export default function AdminPage() {
 
   const handleMarkPaid = async (winnerId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('draw_results')
         .update({
           payment_status: 'paid'
@@ -261,7 +270,7 @@ export default function AdminPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {drawResults.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                       No winners yet
                     </td>
                   </tr>

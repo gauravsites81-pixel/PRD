@@ -92,6 +92,8 @@ export async function POST() {
           prize_amount: 0, // Will be calculated based on pool distribution
           payment_status: 'pending',
           actual_prize_amount: 0, // Will be calculated
+          proof_url: '',
+          verification_status: 'pending',
         });
       }
     }

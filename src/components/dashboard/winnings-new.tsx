@@ -11,8 +11,8 @@ type Props = {
 
 export function WinningsNew({ userId, disabled = false }: Props) {
   const supabase = createBrowserSupabaseClient();
-  const [winnings, setWinnings] = useState<DrawResult[]>([]);
-  const [participatedDraws, setParticipatedDraws] = useState<Draw[]>([]);
+  const [winnings, setWinnings] = useState<any[]>([]);
+  const [participatedDraws, setParticipatedDraws] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,18 +49,18 @@ export function WinningsNew({ userId, disabled = false }: Props) {
       }
 
       // Extract unique draws from winnings
-      const drawIds = winningsData?.map(w => w.draw?.id).filter(Boolean) || [];
+      const drawIds = winningsData?.map(w => (w as any).draw_id).filter(Boolean) || [];
       const uniqueDrawIds = [...new Set(drawIds)];
 
       // Fetch unique draw details
-      let drawDetails: Draw[] = [];
+      let drawDetails: any[] = [];
       if (uniqueDrawIds.length > 0) {
         const { data: drawsData } = await supabase
           .from('draws')
           .select('id, created_at, drawn_numbers')
           .in('id', uniqueDrawIds)
           .order('created_at', { ascending: false });
-        
+
         drawDetails = drawsData || [];
       }
 
@@ -89,7 +89,7 @@ export function WinningsNew({ userId, disabled = false }: Props) {
         setParticipatedDraws([]);
       }
 
-      setWinnings(winningsData || []);
+      setWinnings(winningsData as any || []);
     } catch (err) {
       console.error('Error in fetchWinningsData:', err);
       setError('Failed to fetch data');
@@ -273,7 +273,7 @@ export function WinningsNew({ userId, disabled = false }: Props) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-1">
-                        {draw.drawn_numbers?.map((num, index) => (
+                        {draw.drawn_numbers?.map((num: number, index: number) => (
                           <span
                             key={index}
                             className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
@@ -284,7 +284,7 @@ export function WinningsNew({ userId, disabled = false }: Props) {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {winnings.some(w => w.draw?.id === draw.id) ? (
+                      {winnings.some(w => (w as any).draw_id === draw.id) ? (
                         <span className="text-green-600 font-medium">Won!</span>
                       ) : (
                         <span className="text-gray-500">No win</span>

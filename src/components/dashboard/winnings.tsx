@@ -71,7 +71,7 @@ export function Winnings({ userId, disabled = false }: Props) {
         }
 
         // Filter draws where user had scores before the draw
-        const participatedDraws: Draw[] = allDraws?.filter((draw: Draw) => {
+        const participatedDraws: any[] = allDraws?.filter((draw: any) => {
           const drawDate = new Date(draw.created_at);
           return userDates.some((userScoreDate: Date) => {
             return userScoreDate < drawDate;

@@ -211,7 +211,6 @@ export default async function DashboardPage() {
         {/* WINNER PROOF */}
         <WinnerProof
           userId={user.id}
-          winning={userResult}
           disabled={!isSubscribed}
         />
 

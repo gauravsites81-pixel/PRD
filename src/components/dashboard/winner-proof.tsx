@@ -1,20 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase-browser';
 import type { DrawResult } from '@/types/database';
 
 type Props = {
   userId: string;
-  winning: DrawResult | null;
   disabled?: boolean;
 };
 
-export function WinnerProof({ userId, winning, disabled = false }: Props) {
+export function WinnerProof({ userId, disabled = false }: Props) {
   const supabase = createBrowserSupabaseClient();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [winning, setWinning] = useState<DrawResult | null>(null);
+
+  useEffect(() => {
+    async function fetchWinningData() {
+      const { data } = await supabase
+        .from('draw_results')
+        .select('*')
+        .eq('winner_user_id', userId)
+        .eq('payment_status', 'pending')
+        .maybeSingle();
+      
+      setWinning(data as DrawResult | null);
+    }
+
+    fetchWinningData();
+  }, [userId]);
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = event.target.files?.[0];
@@ -204,7 +219,7 @@ export function WinnerProof({ userId, winning, disabled = false }: Props) {
       {winning.verification_status === 'pending' && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-yellow-800 text-sm">
-            ⏳ Your proof is being reviewed by administrators. You'll be notified once verified.
+            Your proof is being reviewed by administrators. You&apos;ll be notified once verified.
           </p>
         </div>
       )}

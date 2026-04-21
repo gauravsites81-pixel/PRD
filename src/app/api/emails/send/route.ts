@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid email type' }, { status: 400 });
     }
 
-    await sendEmail(user.email, subject, html);
+    await sendEmail((user as any).email, subject, html);
 
     return NextResponse.json({ 
       success: true,

@@ -1,7 +1,12 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 export const supabase = createClientComponentClient<Database>();
+export const supabaseAny = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // ================= USER =================
 export async function getCurrentUser() {
@@ -37,14 +42,14 @@ export async function addGolfScore(score: number, date: string) {
     return { error: 'User not authenticated' };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAny
     .from('golf_scores')
     .insert([
       {
         user_id: user.id,
         score,
-        date,
-      } as any,
+        date: new Date().toISOString(),
+      },
     ])
     .select();
 
@@ -67,7 +72,7 @@ export async function updateGolfScore(
   score: number,
   date: string
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAny
     .from('golf_scores')
     .update({ score, date })
     .eq('id', scoreId)
@@ -141,7 +146,7 @@ export async function updateUserCharity(
   let result;
 
   if (existing && existing.length > 0) {
-    result = await supabase
+    result = await supabaseAny
       .from('user_charity')
       .update({
         charity_id: charityId,
@@ -151,7 +156,7 @@ export async function updateUserCharity(
       .select('*, charities(*)')
       .single();
   } else {
-    result = await supabase
+    result = await supabaseAny
       .from('user_charity')
       .insert([
         {

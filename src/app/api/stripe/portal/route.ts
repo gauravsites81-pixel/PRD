@@ -38,13 +38,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
-    if (!subscription || !subscription.stripe_customer_id) {
+    if (!subscription || !(subscription as any).stripe_customer_id) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 400 });
     }
 
     // Create Stripe billing portal session
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
+      customer: (subscription as any).stripe_customer_id,
       return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
     });
 
