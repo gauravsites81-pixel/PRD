@@ -58,6 +58,8 @@ export default function SignupPage() {
       // Handle duplicate email gracefully
       if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already been registered')) {
         setError('Email already registered. Please verify your email or request a new verification link.');
+      } else if (signUpError.message?.includes('rate limit') || signUpError.message?.includes('too many requests')) {
+        setError('Too many signup requests. Please wait a few minutes before trying again.');
       } else {
         setError(signUpError.message || 'Failed to create account. Please try again.');
       }
@@ -112,6 +114,8 @@ export default function SignupPage() {
         setError('No account found with this email address. Please sign up first.');
       } else if (resendError.message?.includes('already confirmed')) {
         setError('This email is already verified. You can log in.');
+      } else if (resendError.message?.includes('rate limit') || resendError.message?.includes('too many requests')) {
+        setError('Too many email requests. Please wait a few minutes before trying again.');
       } else {
         setError(resendError.message || 'Failed to resend verification email. Please try again.');
       }

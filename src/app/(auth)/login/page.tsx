@@ -93,6 +93,8 @@ export default function LoginPage() {
         setError('No account found with this email address. Please sign up first.');
       } else if (resendError.message?.includes('already confirmed')) {
         setError('This email is already verified. You can log in.');
+      } else if (resendError.message?.includes('rate limit') || resendError.message?.includes('too many requests')) {
+        setError('Too many email requests. Please wait a few minutes before trying again.');
       } else {
         setError(resendError.message || 'Failed to resend verification email. Please try again.');
       }
