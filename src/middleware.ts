@@ -18,21 +18,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (pathname.startsWith('/admin')) {
-    const { data } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-    const profile = data as { role: string } | null;
-
-    if (profile?.role !== 'admin' && session.user.email !== 'gauravsites81@gmail.com') {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/dashboard';
-      redirectUrl.searchParams.delete('next');
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
+  // Admin auth protection is handled by admin layout.tsx
+  // Remove duplicate auth logic to prevent redirect loops
 
   return response;
 }
