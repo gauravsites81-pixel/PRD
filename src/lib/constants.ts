@@ -3,7 +3,7 @@
  */
 
 export const APP_NAME = 'GolfHeroes';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app';
 
 // Currency
 export const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY || 'GBP';
@@ -90,4 +90,4 @@ export const getCurrentMonth = () => new Date().getMonth() + 1;
 export const getCurrentYear = () => new Date().getFullYear();
 
 // API
-export const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app';

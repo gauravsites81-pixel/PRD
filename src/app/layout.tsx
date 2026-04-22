@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: 'GolfHeroes - Golf Draw Platform',
   description:
     'Join our monthly golf draw. Supporting charities through Stableford scores. Win prizes while making a difference.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'),
   openGraph: {
     title: 'GolfHeroes - Golf Draw Platform',
     description: 'Join our monthly golf draw. Supporting charities through Stableford scores.',
