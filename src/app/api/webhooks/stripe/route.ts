@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      const userId = session.metadata?.user_id;
+      const userId = session.metadata?.user_id || session.client_reference_id;
       const subscriptionId = session.subscription as string;
       const customerId = session.customer as string;
       const clientReferenceId = session.client_reference_id as string; // CRITICAL: From checkout
@@ -47,7 +47,8 @@ export async function POST(req: Request) {
       // Processing webhook data for user subscription
 
       if (!userId) {
-        return Response.json({ ok: true });
+        console.error('Webhook Error: No user ID found in session metadata or client_reference_id', { sessionId: session.id });
+        return Response.json({ ok: true }); // Acknowledge to Stripe but skip
       }
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -69,9 +70,10 @@ export async function POST(req: Request) {
           ? 'active'
           : subscription.status === 'canceled'
           ? 'cancelled'
-          : 'inactive';
+          : 'lapsed'; // 'inactive' was violating DB constraint
 
       // Saving subscription for user
+      console.log(`Processing subscription for user ${userId}, status: ${normalizedStatus}`);
 
       const { error } = await supabaseAdmin.from('subscriptions').upsert(
         {
@@ -88,9 +90,9 @@ export async function POST(req: Request) {
       );
 
       if (error) {
-        // Supabase error occurred
+        console.error('Webhook Supabase Upsert Error:', error);
       } else {
-        // Subscription saved successfully
+        console.log(`Successfully updated subscription for user ${userId}`);
       }
     }
 
