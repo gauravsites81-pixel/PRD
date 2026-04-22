@@ -5,16 +5,18 @@ export function SubscribeButtons({
   monthlyPriceId,
   yearlyPriceId,
   userId,
+  userEmail,
 }: {
   monthlyPriceId: string;
   yearlyPriceId: string;
   userId: string;
+  userEmail: string;
 }) {
   async function handleSubscribe(priceId: string) {
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId, userId }),
+      body: JSON.stringify({ priceId, userId, userEmail }),
     });
 
     const data = await res.json();

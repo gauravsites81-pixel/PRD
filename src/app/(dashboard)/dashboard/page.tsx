@@ -175,6 +175,7 @@ export default async function DashboardPage() {
                   process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID || ''
                 }
                 userId={user.id}
+                userEmail={user.email || ''}
               />
             </div>
           )}

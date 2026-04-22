@@ -39,6 +39,8 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      console.log('Stripe Webhook: checkout.session.completed payload:', JSON.stringify(session, null, 2));
+
       const userId = session.metadata?.user_id || session.client_reference_id;
       const subscriptionId = session.subscription as string;
       const customerId = session.customer as string;
@@ -47,9 +49,11 @@ export async function POST(req: Request) {
       // Processing webhook data for user subscription
 
       if (!userId) {
-        console.error('Webhook Error: No user ID found in session metadata or client_reference_id', { sessionId: session.id });
-        return Response.json({ ok: true }); // Acknowledge to Stripe but skip
+        console.error('Webhook Error: No user ID found in session metadata or client_reference_id', { sessionId: session.id, metadata: session.metadata });
+        return Response.json({ error: 'Missing userId' }, { status: 400 });
       }
+
+      console.log(`Webhook: Found userId ${userId}, proceeding with subscription processing...`);
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
@@ -73,9 +77,9 @@ export async function POST(req: Request) {
           : 'lapsed'; // 'inactive' was violating DB constraint
 
       // Saving subscription for user
-      console.log(`Processing subscription for user ${userId}, status: ${normalizedStatus}`);
+      console.log(`Processing subscription for user ${userId}, status: ${normalizedStatus}, plan: ${plan}`);
 
-      const { error } = await supabaseAdmin.from('subscriptions').upsert(
+      const { data, error } = await supabaseAdmin.from('subscriptions').upsert(
         {
           user_id: userId,
           stripe_customer_id: customerId,
@@ -87,12 +91,13 @@ export async function POST(req: Request) {
           ).toISOString(),
         },
         { onConflict: 'user_id' }
-      );
+      ).select();
 
       if (error) {
         console.error('Webhook Supabase Upsert Error:', error);
+        return Response.json({ error: 'Database insert failed' }, { status: 500 });
       } else {
-        console.log(`Successfully updated subscription for user ${userId}`);
+        console.log(`Successfully updated subscription for user ${userId}. DB Row:`, data);
       }
     }
 

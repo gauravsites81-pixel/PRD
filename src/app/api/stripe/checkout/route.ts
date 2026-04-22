@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
     const priceId = body?.priceId;
     const userId = body?.userId;
+    const userEmail = body?.userEmail;
 
     if (!priceId) {
       return Response.json({ error: 'Missing priceId' }, { status: 400 });
@@ -35,11 +36,14 @@ export async function POST(req: Request) {
       ],
       metadata: {
         user_id: userId,
+        ...(userEmail && { user_email: userEmail }),
       },
       client_reference_id: userId, // CRITICAL: Link session to user
       success_url: `${appUrl}/dashboard?success=true`,
       cancel_url: `${appUrl}/dashboard?canceled=true`,
     });
+
+    console.log('Created Stripe Checkout Session with Metadata:', session.metadata);
 
     return Response.json({ url: session.url });
 
