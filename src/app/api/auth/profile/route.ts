@@ -19,21 +19,21 @@ export async function POST() {
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  // Temporarily disabled - don't override existing roles during testing
-  // const { error } = await adminSupabase
-  //   .from('users')
-  //   .upsert(
-  //     {
-  //       id: user.id,
-  //       email: user.email,
-  //       role: existingUser?.role || 'subscriber', // Preserve existing role
-  //     },
-  //     { onConflict: 'id' }
-  //   );
+  const fullName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null;
 
-  const { error } = { error: null }; // No-op for testing
+  const { error } = await adminSupabase
+    .from('users')
+    .upsert(
+      {
+        id: user.id,
+        email: user.email,
+        full_name: fullName,
+        role: existingUser?.role || 'subscriber', // Preserve existing role
+      },
+      { onConflict: 'id' }
+    );
 
   if (error) {
     // Failed to sync public.users profile
