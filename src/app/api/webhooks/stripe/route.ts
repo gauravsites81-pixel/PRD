@@ -39,8 +39,6 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      console.log('Stripe Webhook: checkout.session.completed payload:', JSON.stringify(session, null, 2));
-
       const userId = session.metadata?.user_id || session.client_reference_id;
       const subscriptionId = session.subscription as string;
       const customerId = session.customer as string;
@@ -79,7 +77,8 @@ export async function POST(req: Request) {
       // Saving subscription for user
       console.log(`Processing subscription for user ${userId}, status: ${normalizedStatus}, plan: ${plan}`);
 
-      const { data, error } = await supabaseAdmin.from('subscriptions').upsert(
+      // Idempotent upsert based on user_id constraint
+      const { error } = await supabaseAdmin.from('subscriptions').upsert(
         {
           user_id: userId,
           stripe_customer_id: customerId,
@@ -91,13 +90,13 @@ export async function POST(req: Request) {
           ).toISOString(),
         },
         { onConflict: 'user_id' }
-      ).select();
+      );
 
       if (error) {
         console.error('Webhook Supabase Upsert Error:', error);
         return Response.json({ error: 'Database insert failed' }, { status: 500 });
       } else {
-        console.log(`Successfully updated subscription for user ${userId}. DB Row:`, data);
+        console.log(`Successfully updated subscription for user ${userId}.`);
       }
     }
 
