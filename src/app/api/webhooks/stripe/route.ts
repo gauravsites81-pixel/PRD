@@ -42,42 +42,25 @@ export async function POST(req: Request) {
       const userId = session.metadata?.user_id || session.client_reference_id;
       const subscriptionId = session.subscription as string;
       const customerId = session.customer as string;
-      const clientReferenceId = session.client_reference_id as string; // CRITICAL: From checkout
-
-      // Processing webhook data for user subscription
 
       if (!userId) {
-        console.error('Webhook Error: No user ID found in session metadata or client_reference_id', { sessionId: session.id, metadata: session.metadata });
+        console.error('Webhook Error: No user ID found in session metadata or client_reference_id', { sessionId: session.id });
         return Response.json({ error: 'Missing userId' }, { status: 400 });
       }
 
-      console.log(`Webhook: Found userId ${userId}, proceeding with subscription processing...`);
+      console.log(`Webhook: Found userId ${userId}, proceeding with checkout.session.completed...`);
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const interval = subscription.items.data[0]?.price?.recurring?.interval;
+      const plan = interval === 'month' ? 'monthly' : interval === 'year' ? 'yearly' : null;
 
-      const interval =
-        subscription.items.data[0]?.price?.recurring?.interval;
-
-      const plan =
-        interval === 'month'
-          ? 'monthly'
-          : interval === 'year'
-          ? 'yearly'
-          : null;
-
-      // FIXED STATUS NORMALIZATION
       const normalizedStatus =
-        subscription.status === 'active' ||
-        subscription.status === 'trialing'
+        subscription.status === 'active' || subscription.status === 'trialing'
           ? 'active'
           : subscription.status === 'canceled'
           ? 'cancelled'
-          : 'lapsed'; // 'inactive' was violating DB constraint
+          : 'lapsed';
 
-      // Saving subscription for user
-      console.log(`Processing subscription for user ${userId}, status: ${normalizedStatus}, plan: ${plan}`);
-
-      // Idempotent upsert based on user_id constraint
       const { error } = await supabaseAdmin.from('subscriptions').upsert(
         {
           user_id: userId,
@@ -85,18 +68,68 @@ export async function POST(req: Request) {
           stripe_subscription_id: subscription.id,
           plan,
           status: normalizedStatus,
-          current_period_end: new Date(
-            subscription.current_period_end * 1000
-          ).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         },
         { onConflict: 'user_id' }
       );
 
       if (error) {
-        console.error('Webhook Supabase Upsert Error:', error);
+        console.error('Webhook Supabase Upsert Error on Checkout:', error);
         return Response.json({ error: 'Database insert failed' }, { status: 500 });
       } else {
-        console.log(`Successfully updated subscription for user ${userId}.`);
+        console.log(`Successfully processed checkout.session.completed for user ${userId}.`);
+      }
+    } else if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
+
+      console.log(`Webhook: Processing ${event.type} for customer ${customerId}...`);
+
+      let userId = subscription.metadata?.user_id;
+
+      if (!userId) {
+        // Fallback to existing db record if metadata is missing on the subscription
+        const { data: existingSub } = await supabaseAdmin
+          .from('subscriptions')
+          .select('user_id')
+          .eq('stripe_subscription_id', subscription.id)
+          .maybeSingle();
+        
+        userId = existingSub?.user_id;
+      }
+
+      if (!userId) {
+        console.log(`Webhook: No user_id found in metadata or DB for stripe_subscription_id ${subscription.id}`);
+        return Response.json({ received: true });
+      }
+
+      const interval = subscription.items.data[0]?.price?.recurring?.interval;
+      const plan = interval === 'month' ? 'monthly' : interval === 'year' ? 'yearly' : null;
+
+      const normalizedStatus =
+        subscription.status === 'active' || subscription.status === 'trialing'
+          ? 'active'
+          : subscription.status === 'canceled'
+          ? 'cancelled'
+          : 'lapsed';
+
+      const { error: upsertError } = await supabaseAdmin.from('subscriptions').upsert(
+        {
+          user_id: userId,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          plan,
+          status: normalizedStatus,
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+
+      if (upsertError) {
+        console.error(`Webhook Supabase Upsert Error on ${event.type}:`, upsertError);
+        return Response.json({ error: 'Database update failed' }, { status: 500 });
+      } else {
+        console.log(`Successfully processed ${event.type} for user ${userId}.`);
       }
     }
 

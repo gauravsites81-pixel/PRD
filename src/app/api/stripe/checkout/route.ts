@@ -38,6 +38,12 @@ export async function POST(req: Request) {
         user_id: userId,
         ...(userEmail && { user_email: userEmail }),
       },
+      subscription_data: {
+        metadata: {
+          user_id: userId,
+          ...(userEmail && { user_email: userEmail }),
+        },
+      },
       client_reference_id: userId, // CRITICAL: Link session to user
       success_url: `${appUrl}/dashboard?success=true`,
       cancel_url: `${appUrl}/dashboard?canceled=true`,
