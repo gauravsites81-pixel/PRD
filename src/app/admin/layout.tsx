@@ -9,19 +9,34 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/login?next=/admin');
   }
 
-  // Handle missing user gracefully - default to non-admin if user not found
-  const { data, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  // DEBUG: Log user info for debugging
+  console.log('Admin Layout - User:', { 
+    id: user.id, 
+    email: user.email, 
+    emailLower: user.email?.toLowerCase() 
+  });
 
-  const profile = data as { role: string } | null;
+  // Force allow admin email explicitly
+  if (user.email === 'gauravsites81@gmail.com' || user.email?.toLowerCase() === 'gauravsites81@gmail.com') {
+    console.log('Admin access granted via email fallback');
+    // Continue to admin interface
+  } else {
+    // For non-admin emails, check database role
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
 
-  // If user doesn't exist in users table or is not admin, redirect to dashboard
-  // Only allow access if user is admin in database OR is the super admin email
-  if (error || (!profile && user.email !== 'gauravsites81@gmail.com') || (profile?.role !== 'admin' && user.email !== 'gauravsites81@gmail.com')) {
-    redirect('/dashboard');
+    const profile = data as { role: string } | null;
+
+    console.log('Admin Layout - Profile:', { profile, error });
+
+    // If user doesn't exist in users table or is not admin, redirect to dashboard
+    if (error || !profile || profile.role !== 'admin') {
+      console.log('Admin access denied - redirecting to dashboard');
+      redirect('/dashboard');
+    }
   }
 
   return (
