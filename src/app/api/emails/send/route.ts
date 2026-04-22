@@ -65,7 +65,7 @@ export async function POST(request: Request) {
                 <li>✅ Charity selection</li>
               </ul>
               <div style="margin-top: 20px; text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard" style="background: white; color: #10b981; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Go to Dashboard</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard" style="background: white; color: #10b981; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Go to Dashboard</a>
               </div>
             </div>
           </div>
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
               </div>
               
               <div style="margin-top: 20px; text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Full Results</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Full Results</a>
               </div>
             </div>
           </div>
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
                 <p style="margin-top: 15px; font-size: 14px;">Please upload proof to claim your prize within 7 days.</p>
               </div>
               <div style="margin-top: 20px; text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard" style="background: white; color: #10b981; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Your Dashboard</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard" style="background: white; color: #10b981; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Your Dashboard</a>
               </div>
             </div>
           </div>
