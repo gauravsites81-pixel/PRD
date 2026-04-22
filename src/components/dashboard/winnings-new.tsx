@@ -17,10 +17,7 @@ export function WinningsNew({ userId, disabled = false }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchWinningsData();
-  }, [userId, fetchWinningsData]);
-
-  async function fetchWinningsData() {
+    async function fetchWinningsData() {
     try {
       setLoading(true);
       setError(null);
@@ -91,12 +88,14 @@ export function WinningsNew({ userId, disabled = false }: Props) {
 
       setWinnings(winningsData as any || []);
     } catch (err) {
-      console.error('Error in fetchWinningsData:', err);
       setError('Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }
+    }
+
+    fetchWinningsData();
+  }, [userId, supabase]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

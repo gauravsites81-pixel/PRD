@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase-browser';
 import type { DrawResult, Draw } from '@/types/database';
 
@@ -16,11 +16,7 @@ export function Winnings({ userId, disabled = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWinningsData();
-  }, [userId]);
-
-  async function fetchWinningsData() {
+  const fetchWinningsData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -91,7 +87,11 @@ export function Winnings({ userId, disabled = false }: Props) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [userId, supabase]);
+
+  useEffect(() => {
+    fetchWinningsData();
+  }, [fetchWinningsData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

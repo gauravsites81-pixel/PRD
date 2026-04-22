@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
           setError(resetError.message || 'Failed to send reset email. Please try again.');
         }
       } else {
-        console.log('Password reset email sent successfully to:', email);
+        // Password reset email sent successfully
         setMessage('Password reset email sent! Please check your inbox and follow the instructions.');
         setEmail(''); // Clear email field
       }
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
         </Link>
         <h1 className="mt-6 text-3xl font-extrabold">Reset your password</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we&apos;ll send you a link to reset your password.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6">

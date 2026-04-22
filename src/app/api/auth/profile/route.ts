@@ -36,11 +36,11 @@ export async function POST() {
   const { error } = { error: null }; // No-op for testing
 
   if (error) {
-    console.error(`Failed to sync public.users profile for user ${user.id}:`, error);
+    // Failed to sync public.users profile
     return NextResponse.json({ error: 'Profile sync failed' }, { status: 500 });
   }
 
-  console.log(`Successfully synced public.users profile for auth user ${user.id}`);
+  // Successfully synced public.users profile
 
   return NextResponse.json({ ok: true });
 }

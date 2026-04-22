@@ -28,11 +28,11 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err: any) {
-    console.error('Webhook error:', err.message);
+    // Webhook error occurred
     return new Response('Webhook error', { status: 400 });
   }
 
-  console.log('EVENT:', event.type);
+  // Processing webhook event
 
   try {
     // MAIN EVENT
@@ -44,13 +44,9 @@ export async function POST(req: Request) {
       const customerId = session.customer as string;
       const clientReferenceId = session.client_reference_id as string; // CRITICAL: From checkout
 
-      console.log('WEBHOOK - User ID:', userId);
-      console.log('WEBHOOK - Client Reference ID:', clientReferenceId);
-      console.log('WEBHOOK - Customer ID:', customerId);
-      console.log('WEBHOOK - Subscription ID:', subscriptionId);
+      // Processing webhook data for user subscription
 
       if (!userId) {
-        console.error('Missing user_id');
         return Response.json({ ok: true });
       }
 
@@ -75,7 +71,7 @@ export async function POST(req: Request) {
           ? 'cancelled'
           : 'inactive';
 
-      console.log('WEBHOOK - Saving subscription for user:', userId);
+      // Saving subscription for user
 
       const { error } = await supabaseAdmin.from('subscriptions').upsert(
         {
@@ -92,15 +88,15 @@ export async function POST(req: Request) {
       );
 
       if (error) {
-        console.error('Supabase error:', error);
+        // Supabase error occurred
       } else {
-        console.log(' Subscription saved successfully');
+        // Subscription saved successfully
       }
     }
 
     return Response.json({ received: true });
   } catch (err) {
-    console.error('Webhook handler error:', err);
+    // Webhook handler error occurred
     return new Response('Webhook handler failed', { status: 500 });
   }
 }

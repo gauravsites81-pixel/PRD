@@ -43,7 +43,7 @@ export async function POST() {
       .single();
 
     if (drawError) {
-      console.error('Error creating draw:', drawError);
+      // Error creating draw
       return NextResponse.json(
         { error: 'Failed to create draw' },
         { status: 500 }
@@ -60,7 +60,7 @@ export async function POST() {
       .not('score', 'is', null);
 
     if (scoresError) {
-      console.error('Error fetching golf scores:', scoresError);
+      // Error fetching golf scores
       return NextResponse.json(
         { error: 'Failed to fetch golf scores' },
         { status: 500 }
@@ -115,7 +115,7 @@ export async function POST() {
         .insert(finalDrawResults.map(({ actual_prize_amount, ...result }) => result));
 
       if (resultsError) {
-        console.error('Error inserting draw results:', resultsError);
+        // Error inserting draw results
         return NextResponse.json(
           { error: 'Failed to save draw results' },
           { status: 500 }
@@ -140,7 +140,7 @@ export async function POST() {
         });
 
         if (!emailResponse.ok) {
-          console.error('Failed to send draw completion email');
+          // Failed to send draw completion email
         }
 
         // Send winner emails
@@ -170,7 +170,7 @@ export async function POST() {
           }
         }
 
-        console.log(`Successfully completed draw with ${finalDrawResults.length} winners and prize distribution.`);
+        // Successfully completed draw with winners and prize distribution
 
         return NextResponse.json({
           draw,
@@ -194,7 +194,7 @@ export async function POST() {
           resultsCount: finalDrawResults.length,
         });
       } catch (error) {
-        console.error('Error sending email notifications:', error);
+        // Error sending email notifications
       }
     }
 
@@ -212,7 +212,7 @@ export async function POST() {
       });
 
     if (poolError) {
-      console.error('Error inserting prize pool:', poolError);
+      // Error inserting prize pool
       return NextResponse.json(
         { error: 'Failed to save prize pool' },
         { status: 500 }
@@ -242,7 +242,7 @@ export async function POST() {
     });
 
   } catch (error) {
-    console.error('Unexpected error in draw execution:', error);
+    // Unexpected error in draw execution
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -261,7 +261,7 @@ async function calculatePrizePool(supabase: ReturnType<typeof createServiceRoleC
     .eq('status', 'active');
 
   if (countError) {
-    console.error('Error counting active subscriptions:', countError);
+    // Error counting active subscriptions
     // Default to 0 if there's an error
     return {
       total_pool: 0,

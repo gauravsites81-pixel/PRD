@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       .single();
 
     if (subError) {
-      console.error('Subscription query error:', subError);
+      // Subscription query error occurred
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 });
     }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {
-    console.error('Billing portal error:', error);
+    // Billing portal error occurred
     return NextResponse.json(
       { 
         error: 'Failed to create billing portal session',

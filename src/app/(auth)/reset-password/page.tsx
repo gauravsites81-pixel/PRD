@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSupabase } from '@/lib/supabase-provider';
 import { validatePassword } from '@/utils/validators';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useSupabase();
@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
           setError(resetError.message || 'Failed to reset password. Please try again.');
         }
       } else {
-        console.log('Password reset successful');
+        // Password reset successful
         setMessage('Password reset successful! You can now log in with your new password.');
         setPassword('');
         setConfirmPassword('');
@@ -158,5 +158,13 @@ export default function ResetPasswordPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

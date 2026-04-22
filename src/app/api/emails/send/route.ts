@@ -5,7 +5,7 @@ import { createRouteSupabaseClient } from '@/lib/supabase-server';
 async function sendEmail(to: string, subject: string, html: string) {
   // For now, we'll use a simple console.log approach
   // In production, integrate with your email service
-  console.log(`📧 Email sent to ${to}: ${subject}`);
+  // Email sent successfully
   
   // TODO: Replace with actual email service integration
   // const response = await fetch('https://api.resend.com/v1/email', {
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       message: 'Email sent successfully' 
     });
   } catch (error) {
-    console.error('Email send error:', error);
+    // Email send error occurred
     return NextResponse.json(
       { error: 'Failed to send email' },
       { status: 500 }

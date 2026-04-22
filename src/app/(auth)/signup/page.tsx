@@ -191,7 +191,7 @@ export default function SignupPage() {
     setError('');
     setMessage('');
 
-    console.log('Resending verification to email:', emailToUse);
+    // Resending verification to email
 
     try {
       // Use signup type for resend verification
@@ -204,7 +204,7 @@ export default function SignupPage() {
       });
 
       if (resendError) {
-        console.error('Resend error:', resendError);
+        // Resend error occurred
         if (resendError.message?.includes('User not found')) {
           setError('No account found with this email address. Please sign up first.');
         } else if (resendError.message?.includes('already confirmed')) {
@@ -221,7 +221,7 @@ export default function SignupPage() {
           setError(resendError.message || 'Failed to resend verification email. Please try again.');
         }
       } else {
-        console.log('Verification email sent successfully to:', emailToUse);
+        // Verification email sent successfully
         setMessage(`Email sent! Please check your inbox.`);
         // Set 60-second cooldown after successful send
         const cooldownEnd = Date.now() + (60 * 1000);
@@ -230,7 +230,7 @@ export default function SignupPage() {
         setRateLimitHit(false);
       }
     } catch (error) {
-      console.error('Unexpected error during resend:', error);
+      // Unexpected error during resend
       setError('An unexpected error occurred. Please try again.');
     }
 

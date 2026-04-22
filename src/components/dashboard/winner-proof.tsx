@@ -29,7 +29,7 @@ export function WinnerProof({ userId, disabled = false }: Props) {
     }
 
     fetchWinningData();
-  }, [userId]);
+  }, [userId, supabase]);
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = event.target.files?.[0];

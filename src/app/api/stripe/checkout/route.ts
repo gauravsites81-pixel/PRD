@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    console.log('BODY:', body);
+    // Processing checkout request
 
     const priceId = body?.priceId;
     const userId = body?.userId;
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     return Response.json({ url: session.url });
 
   } catch (err: any) {
-    console.error('CHECKOUT ERROR:', err);
+    // Checkout error occurred
 
     return Response.json(
       { error: err.message || 'Stripe error' },
