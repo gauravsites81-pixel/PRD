@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase-server';
+import { createServiceRoleClient, createServerSupabaseClient } from '@/lib/supabase-server';
 import type { Database, Draw, DrawResult, GolfScore } from '@/types/database';
 
 interface PrizePool {
@@ -17,6 +17,25 @@ interface DrawResultWithPrize extends Omit<DrawResult, 'id' | 'created_at'> {
 
 export async function POST() {
   try {
+    const authClient = createServerSupabaseClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { data } = await authClient
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+      
+    const profile = data as { role: string } | null;
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const supabase = createServiceRoleClient();
 
     // Generate 5 unique random numbers (1-45)
