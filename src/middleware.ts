@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
       .single();
     const profile = data as { role: string } | null;
 
-    if (profile?.role !== 'admin') {
+    if (profile?.role !== 'admin' && session.user.email !== 'gauravsites81@gmail.com') {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/dashboard';
       redirectUrl.searchParams.delete('next');

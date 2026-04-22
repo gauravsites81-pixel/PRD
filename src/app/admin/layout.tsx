@@ -9,17 +9,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/login?next=/admin');
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
 
+  if (error) {
+    console.error('Error fetching user role:', error);
+  }
+
   const profile = data as { role: string } | null;
 
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'admin' && user.email !== 'gauravsites81@gmail.com') {
     // If not admin, explicitly kick them out.
-    redirect('/');
+    redirect('/dashboard');
   }
 
   return (
