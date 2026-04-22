@@ -42,10 +42,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 400 });
     }
 
+    const appUrl = process.env.APP_URL;
+
     // Create Stripe billing portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: (subscription as any).stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://golftrak.vercel.app'}/dashboard`,
+      return_url: `${appUrl}/dashboard`,
     });
 
     return NextResponse.json({ url: portalSession.url });

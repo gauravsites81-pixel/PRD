@@ -21,6 +21,9 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Missing userId' }, { status: 400 });
     }
 
+    const appUrl = process.env.APP_URL;
+    console.log('Stripe Checkout Generated Success URL:', `${appUrl}/dashboard?success=true`);
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -34,8 +37,8 @@ export async function POST(req: Request) {
         user_id: userId,
       },
       client_reference_id: userId, // CRITICAL: Link session to user
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?canceled=true`,
+      success_url: `${appUrl}/dashboard?success=true`,
+      cancel_url: `${appUrl}/dashboard?canceled=true`,
     });
 
     return Response.json({ url: session.url });
